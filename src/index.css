@@ -1,0 +1,27 @@
+body {
+  margin: 0;
+  font-family: monospace, monospace;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: monospace, monospace;
+}
+
+.billboard {
+  border: 1px solid black;
+  background: white;
+  padding: 12px;
+
+}
+
+.billboard .label {
+  font-weight: bold;
+}
+
+canvas {
+  height: 100vh;
+  width: 100vh;
+}
+
