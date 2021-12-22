@@ -1,10 +1,39 @@
 import React, { Suspense, useRef, useState } from "react";
-import { Canvas, useLoader, useFrame, useThree } from "@react-three/fiber";
+import {
+  Canvas,
+  useLoader,
+  useFrame,
+  useThree,
+  extend,
+} from "@react-three/fiber";
 import { TextureLoader } from "three/src/loaders/TextureLoader";
 import HeightMap from "./images/LALT_GGT_MAP.jpg";
 import { DoubleSide, Raycaster, RepeatWrapping, Path, Vector2 } from "three";
 
+// since this comes out of three.js, we "extend" it to be usable in jsx.
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+extend({ OrbitControls });
 const pointUp = Math.PI / 2;
+
+const CameraControls = () => {
+  // Get a reference to the Three.js Camera, and the canvas html element.
+  // We need these to setup the OrbitControls component.
+  // https://threejs.org/docs/#examples/en/controls/OrbitControls
+  const {
+    camera,
+    gl: { domElement },
+  } = useThree();
+  // Ref to the controls, so that we can update them on every frame using useFrame
+  const controls = useRef();
+  useFrame((state) => controls.current.update());
+  return (
+    <orbitControls
+      ref={controls}
+      args={[camera, domElement]}
+      autoRotate={true}
+    />
+  );
+};
 
 const Moon = ({ canvasRef }) => {
   const { camera } = useThree();
@@ -38,9 +67,11 @@ const Moon = ({ canvasRef }) => {
     // Toggle rotation bool for meshes that we clicked
     if (intersects.length > 0) {
       console.log("YOU TOUCHED THE MOON.");
+      console.log("intersect: ", intersects[0]);
+      setIntersect(intersects[0]);
       markerRef.current && markerRef.current.position.set(0, 0, 0);
       markerRef.current && markerRef.current.lookAt(intersects[0].face.normal);
-
+      console.log("point: ", intersects[0].point);
       markerRef.current && markerRef.current.position.copy(intersects[0].point);
     }
   };
@@ -48,10 +79,12 @@ const Moon = ({ canvasRef }) => {
   useFrame(({ clock, mouse }) => {
     if (rotating) {
       moonRef.current.rotation.y += 0.001;
+      moonRef.current.updateMatrix();
     }
   });
 
-  const [rotating, setRotating] = useState(true);
+  const [rotating, setRotating] = useState(false);
+  const [intersect, setIntersect] = useState(false);
   const displacementMap = useLoader(TextureLoader, HeightMap);
   displacementMap.wrapS = RepeatWrapping;
 
@@ -65,21 +98,21 @@ const Moon = ({ canvasRef }) => {
         <sphereGeometry args={[2, 84, 84]} />
         <meshPhongMaterial
           // displacementMap={displacementMap}
-          displacementScale={0.3}
-          color="white"
+          displacementScale={0.0}
+          color="#fff5ee"
           displacementMap={displacementMap}
           aoMap={displacementMap}
           bumpMap={displacementMap}
           side={DoubleSide}
         />
-      </mesh>
-      <mesh ref={markerRef} position={[-2.5, 1, 1]}>
-        <coneGeometry
-          args={[1, 1, 3]}
-          // translate={[0, 5, 0]}
-          rotateX={pointUp}
-        />
-        <meshNormalMaterial color="red" />
+        <mesh ref={markerRef} position={[-2.5, 1, 1]}>
+          <coneGeometry
+            args={[0.2, 0.2, 5, 5]}
+            // translate={[0, 5, 0]}
+            rotateX={pointUp}
+          />
+          <meshPhongMaterial color="red" />
+        </mesh>
       </mesh>
     </>
   );
@@ -89,6 +122,7 @@ export const Frame = () => {
   const canvas = useRef();
   return (
     <Canvas ref={canvas}>
+      <CameraControls />
       <Suspense fallback={null}>
         <Moon canvasRef={canvas} />
       </Suspense>
