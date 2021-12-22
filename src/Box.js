@@ -6,7 +6,7 @@ import { DoubleSide, Raycaster, RepeatWrapping, Path, Vector2 } from "three";
 
 const pointUp = Math.PI / 2;
 
-const Moon = () => {
+const Moon = ({ canvasRef }) => {
   const { camera } = useThree();
 
   const moonRef = useRef();
@@ -14,13 +14,14 @@ const Moon = () => {
   const raycaster = new Raycaster();
 
   const onMoonClick = (event) => {
+    const dimensions = canvasRef.current.getBoundingClientRect();
     console.log("clicked.");
     // click(!clicked);
     const pointer = new Vector2(0, 0);
     // I think the intercept issue is happening here. potentially, the pointer location is based on the entire window
     // while the raycaster assumes it will be relative to our little canvas.
-    pointer.x = (event.clientX / window.screen.width) * 2 - 1;
-    pointer.y = -(event.clientY / window.screen.height) * 2 + 1;
+    pointer.x = (event.clientX / dimensions.width) * 2 - 1;
+    pointer.y = -(event.clientY / dimensions.height) * 2 + 1;
 
     console.log("raycaster: ", raycaster);
     console.log("pointer: ", pointer);
@@ -74,8 +75,8 @@ const Moon = () => {
       </mesh>
       <mesh ref={markerRef} position={[-2.5, 1, 1]}>
         <coneGeometry
-          args={[0.2, 1, 3]}
-          translate={[0, 5, 0]}
+          args={[1, 1, 3]}
+          // translate={[0, 5, 0]}
           rotateX={pointUp}
         />
         <meshNormalMaterial color="red" />
@@ -85,10 +86,11 @@ const Moon = () => {
 };
 
 export const Frame = () => {
+  const canvas = useRef();
   return (
-    <Canvas>
+    <Canvas ref={canvas}>
       <Suspense fallback={null}>
-        <Moon />
+        <Moon canvasRef={canvas} />
       </Suspense>
     </Canvas>
   );
