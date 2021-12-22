@@ -4,7 +4,6 @@ import { Frame } from "./Box";
 function App() {
   return (
     <div className="App">
-      <p>moon map</p>
       <Frame />
     </div>
   );

@@ -4,31 +4,29 @@ import { TextureLoader } from "three/src/loaders/TextureLoader";
 import HeightMap from "./images/LALT_GGT_MAP.jpg";
 import { DoubleSide, Raycaster, RepeatWrapping, Path, Vector2 } from "three";
 
-import { Billboard, Text } from "@react-three/drei";
-
 const pointUp = Math.PI / 2;
 
-const Moon = ({ canvasDimensions }) => {
+const Moon = () => {
   const { camera } = useThree();
 
   const moonRef = useRef();
   const markerRef = useRef();
   const raycaster = new Raycaster();
-  // const useEffect = (( ) => {
 
-  // }, []);
-
-  // useEffect(() => { yourRaycaster.intersectObject(ref.current) }, []);
   const onMoonClick = (event) => {
     console.log("clicked.");
-    click(!clicked);
+    // click(!clicked);
     const pointer = new Vector2(0, 0);
-    pointer.x = (event.clientX / canvasDimensions.width) * 2 - 1;
-    pointer.y = -(event.clientY / canvasDimensions.height) * 2 + 1;
-    // you still need to make sure you got the raycaster right, and get the camera.
+    // I think the intercept issue is happening here. potentially, the pointer location is based on the entire window
+    // while the raycaster assumes it will be relative to our little canvas.
+    pointer.x = (event.clientX / window.screen.width) * 2 - 1;
+    pointer.y = -(event.clientY / window.screen.height) * 2 + 1;
+
     console.log("raycaster: ", raycaster);
     console.log("pointer: ", pointer);
-    raycaster.setFromCamera(pointer, camera.position);
+    // if we pass in `camera.position` instead of `camera`, we get the intersect, but we also get a camera error.
+    // if we pass in the whole camera, we get no error, but also no intersect.
+    raycaster.setFromCamera(pointer, camera);
     console.log("camera: ", camera);
 
     // See if the ray from the camera into the world hits one of our meshes
@@ -46,26 +44,13 @@ const Moon = ({ canvasDimensions }) => {
     }
   };
 
-  // const setLinePoints = useMemo(({ moon, sign }) => {
-  //   const points = [moon, sign];
-  // }, []);
-
   useFrame(({ clock, mouse }) => {
-    if (clicked) {
+    if (rotating) {
       moonRef.current.rotation.y += 0.001;
     }
-    // console.log(moonRef.current && moonRef.current.position);
-    // okay we can log out the moon position and the cursor position.
-    // moon is xyz, cursor is xy
-    // const x = (mouse.x * viewport.width) / 2;
-    // setMoonLocation(moonRef.current.position);
-    // setSignLocation(signLocation.current.position);
-    // // const y = (mouse.y * viewport.height) / 2;
-    // console.log("sign: ", signRef.current.position);
-    // console.log("moon: ", moonRef.current.position);
-    // const points = [signRef.current.position, moonRef.currentPosition];
   });
-  const [clicked, click] = useState(false);
+
+  const [rotating, setRotating] = useState(true);
   const displacementMap = useLoader(TextureLoader, HeightMap);
   displacementMap.wrapS = RepeatWrapping;
 
@@ -75,7 +60,7 @@ const Moon = ({ canvasDimensions }) => {
       {/* <hemisphereLight />; */}
       <ambientLight intensity={0.2} />
       <directionalLight />
-      <mesh ref={moonRef} onClick={onMoonClick}>
+      <mesh ref={moonRef} position={[0, 0, 0]}>
         <sphereGeometry args={[2, 84, 84]} />
         <meshPhongMaterial
           // displacementMap={displacementMap}
@@ -89,53 +74,22 @@ const Moon = ({ canvasDimensions }) => {
       </mesh>
       <mesh ref={markerRef} position={[-2.5, 1, 1]}>
         <coneGeometry
-          args={[0.2, 0.1, 3]}
+          args={[0.2, 1, 3]}
           translate={[0, 5, 0]}
           rotateX={pointUp}
         />
         <meshNormalMaterial color="red" />
       </mesh>
-      <Billboard
-        position={[-5, 1, 1]}
-        follow={true}
-        lockX={false}
-        lockY={false}
-        lockZ={false} // Lock the rotation on the z axis (default=false)
-      >
-        <Text fontSize={0.25} color="black">
-          I'm a billboard
-        </Text>
-      </Billboard>
     </>
   );
 };
 
-export const Board = ({ position, label, description }) => {
-  return (
-    <Billboard
-      position={[-5, 1, 1]}
-      follow={true}
-      lockX={false}
-      lockY={false}
-      lockZ={false} // Lock the rotation on the z axis (default=false)
-    >
-      <Text fontSize={0.25}>I'm a billboard</Text>
-    </Billboard>
-  );
-};
-
 export const Frame = () => {
-  const defaults = { width: "400", height: "400" };
   return (
-    <div
-      className="canvaswrapper"
-      style={{ width: defaults.width, height: defaults.height }}
-    >
-      <Canvas>
-        <Suspense fallback={null}>
-          <Moon canvasDimensions={defaults} />
-        </Suspense>
-      </Canvas>
-    </div>
+    <Canvas>
+      <Suspense fallback={null}>
+        <Moon />
+      </Suspense>
+    </Canvas>
   );
 };
