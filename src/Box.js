@@ -60,7 +60,7 @@ const Moon = () => {
       {/* <hemisphereLight />; */}
       <ambientLight intensity={0.2} />
       <directionalLight />
-      <mesh ref={moonRef} position={[0, 0, 0]}>
+      <mesh ref={moonRef} position={[0, 0, 0]} onClick={onMoonClick}>
         <sphereGeometry args={[2, 84, 84]} />
         <meshPhongMaterial
           // displacementMap={displacementMap}
