@@ -8,12 +8,18 @@ import {
 } from "@react-three/fiber";
 import { TextureLoader } from "three/src/loaders/TextureLoader";
 import HeightMap from "./images/LALT_GGT_MAP.jpg";
-import { DoubleSide, Raycaster, RepeatWrapping, Path, Vector2 } from "three";
+import {
+  DoubleSide,
+  Raycaster,
+  RepeatWrapping,
+  Vector2,
+  Vector3,
+  ArrowHelper,
+} from "three";
 
 // since this comes out of three.js, we "extend" it to be usable in jsx.
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-extend({ OrbitControls });
-const pointUp = Math.PI / 2;
+extend({ OrbitControls, ArrowHelper });
 
 const CameraControls = () => {
   // Get a reference to the Three.js Camera, and the canvas html element.
@@ -28,34 +34,33 @@ const CameraControls = () => {
   useFrame((state) => controls.current.update());
   return (
     <orbitControls
+      rotateSpeed={0.3}
       ref={controls}
       args={[camera, domElement]}
-      autoRotate={true}
+      // autoRotate={true}
     />
   );
 };
 
 const Moon = ({ canvasRef }) => {
   const { camera } = useThree();
+  const [intersect, setIntersect] = useState(false);
 
   const moonRef = useRef();
-  const markerRef = useRef();
   const raycaster = new Raycaster();
+  const arrow = useRef();
 
   const onMoonClick = (event) => {
     const dimensions = canvasRef.current.getBoundingClientRect();
     console.log("clicked.");
-    // click(!clicked);
+
     const pointer = new Vector2(0, 0);
-    // I think the intercept issue is happening here. potentially, the pointer location is based on the entire window
-    // while the raycaster assumes it will be relative to our little canvas.
+
     pointer.x = (event.clientX / dimensions.width) * 2 - 1;
     pointer.y = -(event.clientY / dimensions.height) * 2 + 1;
 
     console.log("raycaster: ", raycaster);
     console.log("pointer: ", pointer);
-    // if we pass in `camera.position` instead of `camera`, we get the intersect, but we also get a camera error.
-    // if we pass in the whole camera, we get no error, but also no intersect.
     raycaster.setFromCamera(pointer, camera);
     console.log("camera: ", camera);
 
@@ -68,51 +73,47 @@ const Moon = ({ canvasRef }) => {
     if (intersects.length > 0) {
       console.log("YOU TOUCHED THE MOON.");
       console.log("intersect: ", intersects[0]);
-      setIntersect(intersects[0]);
-      markerRef.current && markerRef.current.position.set(0, 0, 0);
-      markerRef.current && markerRef.current.lookAt(intersects[0].face.normal);
-      console.log("point: ", intersects[0].point);
-      markerRef.current && markerRef.current.position.copy(intersects[0].point);
+      if (intersects[0].face) {
+        const n = new Vector3();
+        n.copy(intersects[0].face.normal);
+        n.transformDirection(intersects[0].object.matrixWorld);
+
+        arrow.current.setDirection(n);
+        arrow.current.position.copy(intersects[0].point);
+
+        // arrow.current && markerRef.current.position.set(0, 0, 0);
+        // markerRef.current &&
+        //   markerRef.current.lookAt(intersects[0].face.normal);
+        // console.log("point: ", intersects[0].point);
+        // markerRef.current &&
+        //   markerRef.current.position.copy(intersects[0].point);
+      }
     }
   };
 
-  useFrame(({ clock, mouse }) => {
-    if (rotating) {
-      moonRef.current.rotation.y += 0.001;
-      moonRef.current.updateMatrix();
-    }
-  });
-
   const [rotating, setRotating] = useState(false);
-  const [intersect, setIntersect] = useState(false);
   const displacementMap = useLoader(TextureLoader, HeightMap);
   displacementMap.wrapS = RepeatWrapping;
 
   displacementMap.wrapT = RepeatWrapping;
   return (
     <>
-      {/* <hemisphereLight />; */}
       <ambientLight intensity={0.2} />
       <directionalLight />
       <mesh ref={moonRef} position={[0, 0, 0]} onClick={onMoonClick}>
         <sphereGeometry args={[2, 84, 84]} />
         <meshPhongMaterial
-          // displacementMap={displacementMap}
-          displacementScale={0.0}
+          displacementScale={0.2}
           color="#fff5ee"
           displacementMap={displacementMap}
           aoMap={displacementMap}
           bumpMap={displacementMap}
           side={DoubleSide}
         />
-        <mesh ref={markerRef} position={[-2.5, 1, 1]}>
-          <coneGeometry
-            args={[0.2, 0.2, 5, 5]}
-            // translate={[0, 5, 0]}
-            rotateX={pointUp}
-          />
-          <meshPhongMaterial color="red" />
-        </mesh>
+        <arrowHelper
+          ref={arrow}
+          args={[new Vector3(), new Vector3(), 1, "red"]}
+        />
       </mesh>
     </>
   );
