@@ -1,50 +1,50 @@
-import React, {
-  Suspense,
-  useMemo,
-  useRef,
-  useState,
-  useLayoutEffect,
-} from "react";
+import React, { Suspense, useRef, useState } from "react";
 import { Canvas, useLoader, useFrame, useThree } from "@react-three/fiber";
 import { TextureLoader } from "three/src/loaders/TextureLoader";
 import HeightMap from "./images/LALT_GGT_MAP.jpg";
-import otherHeightMap from "./images/heightmapper512x512.png";
-import { DoubleSide, Raycaster, RepeatWrapping, Path } from "three";
+import { DoubleSide, Raycaster, RepeatWrapping, Path, Vector2 } from "three";
 
-import { Billboard, Plane, Text } from "@react-three/drei";
+import { Billboard, Text } from "@react-three/drei";
+
+const pointUp = Math.PI / 2;
 
 const Moon = ({ canvasDimensions }) => {
-  const { viewport } = useThree();
-  const [cursorPoints, setCursorPoints] = useState();
-  const [moonLocation, setMoonLocation] = useState([0, 0, 0]);
-  const [signLocation, setSignLocation] = useState([-5, 1, 1]);
+  const { camera } = useThree();
+
   const moonRef = useRef();
-  const signRef = useRef();
-  const lineRef = useRef();
-  // const raycaster = new Raycaster();
+  const markerRef = useRef();
+  const raycaster = new Raycaster();
   // const useEffect = (( ) => {
 
   // }, []);
-  // const onPointerMove = ( event ) => {
 
-  //     pointer.x = ( event.clientX / canvasDimensions.width ) * 2 - 1;
-  //     pointer.y = - ( event.clientY / canvasDimensions.height ) * 2 + 1;
-  //     raycaster.setFromCamera( pointer, camera );
+  // useEffect(() => { yourRaycaster.intersectObject(ref.current) }, []);
+  const onMoonClick = (event) => {
+    console.log("clicked.");
+    click(!clicked);
+    const pointer = new Vector2(0, 0);
+    pointer.x = (event.clientX / canvasDimensions.width) * 2 - 1;
+    pointer.y = -(event.clientY / canvasDimensions.height) * 2 + 1;
+    // you still need to make sure you got the raycaster right, and get the camera.
+    console.log("raycaster: ", raycaster);
+    console.log("pointer: ", pointer);
+    raycaster.setFromCamera(pointer, camera.position);
+    console.log("camera: ", camera);
 
-  //     // See if the ray from the camera into the world hits one of our meshes
-  //     const intersects = raycaster.intersectObject( mesh );
+    // See if the ray from the camera into the world hits one of our meshes
+    console.log("moon ref: ", moonRef.current);
+    const intersects = raycaster.intersectObject(moonRef.current, true);
+    console.log("intersects: ", intersects);
 
-  //     // Toggle rotation bool for meshes that we clicked
-  //     if ( intersects.length > 0 ) {
+    // Toggle rotation bool for meshes that we clicked
+    if (intersects.length > 0) {
+      console.log("YOU TOUCHED THE MOON.");
+      markerRef.current && markerRef.current.position.set(0, 0, 0);
+      markerRef.current && markerRef.current.lookAt(intersects[0].face.normal);
 
-  //         helper.position.set( 0, 0, 0 );
-  //         helper.lookAt( intersects[ 0 ].face.normal );
-
-  //         helper.position.copy( intersects[ 0 ].point );
-
-  //     }
-
-  // }
+      markerRef.current && markerRef.current.position.copy(intersects[0].point);
+    }
+  };
 
   // const setLinePoints = useMemo(({ moon, sign }) => {
   //   const points = [moon, sign];
@@ -75,13 +75,8 @@ const Moon = ({ canvasDimensions }) => {
       {/* <hemisphereLight />; */}
       <ambientLight intensity={0.2} />
       <directionalLight />
-      <mesh
-        ref={moonRef}
-        onClick={() => {
-          click(!clicked);
-        }}
-      >
-        <icosahedronBufferGeometry args={[2, 84, 84]} />
+      <mesh ref={moonRef} onClick={onMoonClick}>
+        <sphereGeometry args={[2, 84, 84]} />
         <meshPhongMaterial
           // displacementMap={displacementMap}
           displacementScale={0.3}
@@ -92,9 +87,15 @@ const Moon = ({ canvasDimensions }) => {
           side={DoubleSide}
         />
       </mesh>
-
+      <mesh ref={markerRef} position={[-2.5, 1, 1]}>
+        <coneGeometry
+          args={[0.2, 0.1, 3]}
+          translate={[0, 5, 0]}
+          rotateX={pointUp}
+        />
+        <meshNormalMaterial color="red" />
+      </mesh>
       <Billboard
-        ref={signRef}
         position={[-5, 1, 1]}
         follow={true}
         lockX={false}
